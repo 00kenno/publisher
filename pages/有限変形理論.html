@@ -55,14 +55,16 @@
 </body>
 <script>
 	function startCalc () {
-		E = document.getElementById("E").value * 1e9;
-		d = document.getElementById("d").value;
-		I = Math.PI * d * d * d * d / 64;
-		L = document.getElementById("L").value;
-		delta = document.getElementById("delta").value;
+		const E = document.getElementById("E").value * 1e9;
+		const d = document.getElementById("d").value;
+		const I = Math.PI * d * d * d * d / 64;
+		const L = document.getElementById("L").value;
+		const delta = document.getElementById("delta").value;
 		console.log(`E=${E},d=${d},I=${I},L=${L},delta=${delta}`);
-		document.getElementById("result").textContent = findPsi_0 (E, I, L, delta);
+		const psi_0 = findPsi_0 (E, I, L, delta);
+		document.getElementById("result").textContent = (`= ${psi_0} rad = ${psi_0 * 180 / Math.PI} deg`);
 	}
+	
 	function findPsi_0 (E, I, L, delta) {
 		const psi_0_min = 0;
 		const psi_0_max = Math.PI/2;
@@ -78,7 +80,8 @@
 			const phi_1 = calcPhi_1(p, phi_0_mid);
 			const q = calcQ(p, phi_1);
 			const P = E * I * q * q / L / L;
-			d = Math.sqrt(E * I) * (q - 2 * (E_k__E_phi_k(Math.PI/2, p) - E_k__E_phi_k(phi_1, p)));
+			d = Math.sqrt(E * I / P) * (q - 2 * (E_k__E_phi_k(Math.PI/2, p) - E_k__E_phi_k(phi_1, p)));
+			console.log(`phi_0_mid: ${phi_0_mid}`);
 			console.log(`p: ${p}`);
 			console.log(`phi_1: ${phi_1}`);
 			console.log(`q: ${q}`);
