@@ -1,0 +1,156 @@
+<head>
+	<style>
+		h1 h2 {
+			margin: 10px;
+		}
+		label {
+			display: block;
+		}
+		input {
+			margin: 5px;
+		}
+	</style>
+	<script type="text/javascript" id="MathJax-script" async
+		src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+	</script>
+</head>
+<body>
+	<h1>有限変形理論</h1>
+	<label>ヤング率&nbsp;E:<input type="number" id="E" value="70"></input>GPa</label>
+	<label>直径&nbsp;d:<input type="number" id="d" value="0.01"></input>m</label>
+	<label>長さ&nbsp;L:<input type="number" id="L" value="1"></input>m</label>
+	<label>変形量&nbsp;\(\delta\):<input type="number" id = "delta" value="0.5"></input>m</label>
+	<input type="button" onclick="startCalc()" value="startCalc"></input>
+	<h2>\(\psi_{0}=\)<span id=result>0</span></h2>
+	<p>まず，楕円積分を行う関数が正しいかを確かめた．</p>
+		$$q = \int^{\frac{\pi}{2}}_{\phi_1}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}}$$
+		積分区間を分ける．
+		$$q = \int^{0}_{\phi_{1}}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}} + \int^{\frac{\pi}{2}}_{0}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}}$$
+		$$q = \int^{\frac{\pi}{2}}_{0}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}} - \int^{\phi_{1}}_{0}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}}$$
+	<p>
+		第一項は第一種完全楕円積分&nbsp;\(K(p)\)，
+		第二項は第一種不完全楕円積分&nbsp;\(F(p,\phi_{1})\)&nbsp;である．<br>
+		これらは区分求積法で近似値を求めた．
+		<a href="https://keisan.casio.jp/menu/system/000000001250">計算サイト</a>
+		の結果と見比べ，分割数は10000とした．<br>
+		ここで，\(\phi_{1} = \arcsin(\frac{1}{(\sqrt{2})p})\)&nbsp;である．<br>
+		また，\(p = \sqrt{\frac{1+\sin\psi_{0}}{2}}\)&nbsp;である．
+	</p>
+	<p>
+		二分法で近似値を算出する．そのために以下の関数を設定した．<br>
+		<ul>
+			<li>calcQ:&nbsp;\(q\)&nbsp;を決定する関数</li>
+			<li>calcPhi_1:&nbsp;\(\phi_{1}\)&nbsp;を決定する関数</li>
+			<li>calcSmallP:&nbsp;\(p\)&nbsp;を決定する関数</li>
+			<li>K_k__F_phi_k:&nbsp;第一種完全／不完全楕円積分を区分求積法によって求める関数</li>
+			<li>E_k__E_phi_k:&nbsp;第二種完全／不完全楕円積分を区分求積法によって求める関数</li>
+		</ul>
+		関数&nbsp;findPsi_0&nbsp;内でこれらを呼び出して実行し，
+		誤差が1e-6未満になったところで計算を終了し，結果を出力する．
+	</p>
+	
+	$$q^2 = \frac{PL^2}{EI}$$
+	$$P = \frac{EI}{L^2}q^2$$
+	
+</body>
+<script>
+	function startCalc () {
+		E = document.getElementById("E").value * 1e9;
+		d = document.getElementById("d").value;
+		I = Math.PI * d * d * d * d / 64;
+		L = document.getElementById("L").value;
+		delta = document.getElementById("delta").value;
+		console.log(`E=${E},d=${d},I=${I},L=${L},delta=${delta}`);
+		document.getElementById("result").textContent = findPsi_0 (E, I, L, delta);
+	}
+	function findPsi_0 (E, I, L, delta) {
+		const psi_0_min = 0;
+		const psi_0_max = Math.PI/2;
+		const tolerance = 1e-6;
+		let low = psi_0_min;
+		let high = psi_0_max;
+		let d = 0;
+		
+		for (let i = 0; i < 10000; i++) {
+			console.log(`====loop: ${i + 1}====`);
+			const phi_0_mid = (low + high) / 2;
+			const p = calcSmallP(phi_0_mid);
+			const phi_1 = calcPhi_1(p, phi_0_mid);
+			const q = calcQ(p, phi_1);
+			const P = E * I * q * q / L / L;
+			d = Math.sqrt(E * I) * (q - 2 * (E_k__E_phi_k(Math.PI/2, p) - E_k__E_phi_k(phi_1, p)));
+			console.log(`p: ${p}`);
+			console.log(`phi_1: ${phi_1}`);
+			console.log(`q: ${q}`);
+			console.log(`P: ${P}`);
+			console.log(`d: ${d}`);
+			if (Math.abs(d - delta) < tolerance) {
+				console.log("====OK====");
+				return d;
+			}
+			if (d < delta) {
+				low = phi_0_mid;
+				console.log("check: low");
+			}
+			else {
+				high = phi_0_mid;
+				console.log("check: high");
+			}
+		}
+		
+		return (low + high) / 2;
+	}
+	
+	function calcQ (p, phi_1) {
+		return K_k__F_phi_k(Math.PI/2, p) - K_k__F_phi_k(phi_1, p);
+	}
+	
+	function calcPhi_1 (p, psi_0) {
+		return Math.asin(1 / (Math.sqrt(2) * calcSmallP(psi_0)));
+	}
+	
+	function calcSmallP (psi_0) {
+		return Math.sqrt((1 + Math.sin(psi_0)) / 2);
+	}
+	
+	function K_k__F_phi_k (phi, p, steps = 10000) {
+		const a = 0;
+		const b = phi;
+		const h = (b - a) / steps;
+		let f = 0;
+		let sum = 0;
+		
+		for (let i = 0; i < steps; i++) {
+			const x = a + i * h;
+			f = 1 / Math.sqrt(1 - p * p * Math.sin(x) ** 2);
+			if (i === 0 || i === steps) {
+				sum += f/2;
+			}
+			else {
+				sum += f;
+			}
+		}
+		return h * sum;
+	}
+	
+	function E_k__E_phi_k (phi, p, steps = 10000) {
+		const a = 0;
+		const b = phi;
+		const h = (b - a) / steps;
+		let f = 0;
+		let sum = 0;
+		
+		for (let i = 0; i < steps; i++) {
+			const x = a + i * h;
+			f = Math.sqrt(1 - p * p * Math.sin(x) ** 2);
+			if (i === 0 || i === steps) {
+				sum += f/2;
+			}
+			else {
+				sum += f;
+			}
+		}
+		
+		return h * sum;
+	}
+</script>
