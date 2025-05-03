@@ -9,6 +9,15 @@
 		input {
 			margin: 5px;
 		}
+		.sub {
+			border: solid gray 1px;
+			border-radius: 3px;
+		}
+		hr {
+			padding: 20px 0;
+			border: none;
+			border-top: solid gray 1px;
+		}
 	</style>
 	<script type="text/javascript" id="MathJax-script" async
 		src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
@@ -21,8 +30,20 @@
 	<label>長さ&nbsp;L:<input type="number" id="L" value="1"></input>m</label>
 	<label>変形量&nbsp;\(\delta\):<input type="number" id = "delta" value="0.5"></input>m</label>
 	<input type="button" onclick="startCalc()" value="startCalc"></input>
-	<h2>\(\psi_{0}\)&nbsp;<span id=result>= 0</span></h2>
-	<p>まず，楕円積分を行う関数が正しいかを確かめた．</p>
+	<h2>\(\psi_{0}\)&nbsp;=&nbsp;<span id="psi_0">0</span></h2>
+	<div class="sub">
+		<p>\(p\)&nbsp;=&nbsp;<span id="p">0</span></p>
+		<p>\(q\)&nbsp;=&nbsp;<span id="q">0</span></p>
+	</div>
+	<h2>\(P\)&nbsp;=&nbsp;<span id="P">0</span></h2>
+	<h2>\(m\)&nbsp;=&nbsp;<span id="m">0</span></h2>
+	<h2>\(\delta\)&nbsp;=&nbsp;<span id="output_d">0</span></h2>
+	<h2>\(\Delta\)&nbsp;=&nbsp;<span id="D">0</span></h2>
+	<h2>\(L - \Delta\)&nbsp;=&nbsp;<span id="l">0</span></h2>
+	<h2>\(P(L - \Delta) = M_{0}\)&nbsp;=&nbsp;<span id="M_0">0</span></h2>
+	<h2>\(\sigma\)&nbsp;=&nbsp;<span id="sigma">0</span></h2>
+	<hr>
+	<p>楕円積分を行う関数が正しいかの確認</p>
 		$$q = \int^{\frac{\pi}{2}}_{\phi_1}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}}$$
 		積分区間を分ける．
 		$$q = \int^{0}_{\phi_{1}}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}} + \int^{\frac{\pi}{2}}_{0}\frac{d\phi}{\sqrt{1-p^2\sin^2\phi}}$$
@@ -61,27 +82,44 @@
 		const L = document.getElementById("L").value;
 		const delta = document.getElementById("delta").value;
 		console.log(`E=${E},d=${d},I=${I},L=${L},delta=${delta}`);
-		const psi_0 = findPsi_0 (E, I, L, delta);
-		document.getElementById("result").textContent = (`= ${psi_0} rad = ${psi_0 * 180 / Math.PI} deg`);
+		const result = findPsi_0 (E, I, L, delta);
+		document.getElementById("psi_0").textContent = (`${result.psi_0} rad = ${result.psi_0 * 180 / Math.PI} deg`);
+		document.getElementById("p").textContent = result.p;
+		document.getElementById("q").textContent = result.q;
+		document.getElementById("P").textContent = result.P;
+		document.getElementById("m").textContent = result.P / 9.80665;
+		document.getElementById("output_d").textContent = result.d;
+		const D = L - Math.sqrt(2 * E * I * (2 * result.p * result.p - 1) / result.P);
+		document.getElementById("D").textContent = D;
+		document.getElementById("l").textContent = L - D;
+		const M_0 = result.P * (L - D);
+		document.getElementById("M_0").textContent = M_0;
+		document.getElementById("sigma").textContent = M_0 * d / 2 / I * 1e-6;
 	}
 	
 	function findPsi_0 (E, I, L, delta) {
 		const psi_0_min = 0;
 		const psi_0_max = Math.PI/2;
 		const tolerance = 1e-6;
+		
 		let low = psi_0_min;
 		let high = psi_0_max;
 		let d = 0;
+		let psi_0_mid = 0;
+		let p = 0;
+		let phi_1 = 0;
+		let q = 0;
+		let P = 0;
 		
 		for (let i = 0; i < 10000; i++) {
 			console.log(`====loop: ${i + 1}====`);
-			const phi_0_mid = (low + high) / 2;
-			const p = calcSmallP(phi_0_mid);
-			const phi_1 = calcPhi_1(p, phi_0_mid);
-			const q = calcQ(p, phi_1);
-			const P = E * I * q * q / L / L;
-			d = Math.sqrt(E * I / P) * (q - 2 * (E_k__E_phi_k(Math.PI/2, p) - E_k__E_phi_k(phi_1, p)));
-			console.log(`phi_0_mid: ${phi_0_mid}`);
+			psi_0_mid = (low + high) / 2;
+			p = calcSmallP(psi_0_mid);
+			phi_1 = calcPhi_1(p);
+			q = calcQ(p, phi_1);
+			P = E * I * q * q / L / L;
+			d = calcSmallD(E, I, P, p, phi_1, q);
+			console.log(`psi_0_mid: ${psi_0_mid}`);
 			console.log(`p: ${p}`);
 			console.log(`phi_1: ${phi_1}`);
 			console.log(`q: ${q}`);
@@ -89,31 +127,41 @@
 			console.log(`d: ${d}`);
 			if (Math.abs(d - delta) < tolerance) {
 				console.log("====OK====");
-				return phi_0_mid;
+				break;
 			}
 			if (d < delta) {
-				low = phi_0_mid;
+				low = psi_0_mid;
 				console.log("check: low");
 			}
 			else {
-				high = phi_0_mid;
+				high = psi_0_mid;
 				console.log("check: high");
 			}
 		}
 		
-		return (low + high) / 2;
+		return {
+			psi_0: psi_0_mid,
+			p: p,
+			q: q,
+			P: P,
+			d: d
+		};
+	}
+	
+	function calcSmallP (psi_0) {
+		return Math.sqrt((1 + Math.sin(psi_0)) / 2);
+	}
+	
+	function calcPhi_1 (p) {
+		return Math.asin(1 / (Math.sqrt(2) * p));
 	}
 	
 	function calcQ (p, phi_1) {
 		return K_k__F_phi_k(Math.PI/2, p) - K_k__F_phi_k(phi_1, p);
 	}
 	
-	function calcPhi_1 (p, psi_0) {
-		return Math.asin(1 / (Math.sqrt(2) * calcSmallP(psi_0)));
-	}
-	
-	function calcSmallP (psi_0) {
-		return Math.sqrt((1 + Math.sin(psi_0)) / 2);
+	function calcSmallD (E, I, P, p, phi_1, q) {
+		return Math.sqrt(E * I / P) * (q - 2 * (E_k__E_phi_k(Math.PI/2, p) - E_k__E_phi_k(phi_1, p)));
 	}
 	
 	function K_k__F_phi_k (phi, p, steps = 10000) {
