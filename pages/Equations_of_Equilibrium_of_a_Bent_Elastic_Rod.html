@@ -1,5 +1,10 @@
 <head>
 	<style>
+		body {
+			max-width: 1000px;
+			margin: 0 auto;
+			padding: 20px;
+		}
 		h1 h2 {
 			margin: 10px;
 		}
@@ -12,6 +17,7 @@
 		.sub {
 			border: solid gray 1px;
 			border-radius: 3px;
+			padding: 0 20px;
 		}
 		hr {
 			padding: 20px 0;
@@ -32,15 +38,15 @@
 	<input type="button" onclick="startCalc()" value="startCalc"></input>
 	<h2>\(\psi_{0}\)&nbsp;=&nbsp;<span id="psi_0">0</span></h2>
 	<div class="sub">
-		<p>\(p\)&nbsp;=&nbsp;<span id="p">0</span></p>
-		<p>\(q\)&nbsp;=&nbsp;<span id="q">0</span></p>
+		<h2>\(p\)&nbsp;=&nbsp;<span id="p">0</span></h2>
+		<h2>\(q\)&nbsp;=&nbsp;<span id="q">0</span></h2>
 	</div>
 	<h2>\(P\)&nbsp;=&nbsp;<span id="P">0</span>&nbsp;N</h2>
 	<h2>\(m\)&nbsp;=&nbsp;<span id="m">0</span>&nbsp;kg</h2>
 	<h2>\(\delta\)&nbsp;=&nbsp;<span id="output_d">0</span>&nbsp;m</h2>
 	<h2>\(\Delta\)&nbsp;=&nbsp;<span id="D">0</span>&nbsp;m</h2>
 	<h2>\(L - \Delta\)&nbsp;=&nbsp;<span id="l">0</span>&nbsp;m</h2>
-	<h2>\(P(L - \Delta) = M_{0}\)&nbsp;=&nbsp;<span id="M_0">0</span>&nbsp;Nm</h2>
+	<h2>\(P(L - \Delta)\)&nbsp;=&nbsp;\(M_{0}\)&nbsp;=&nbsp;<span id="M_0">0</span>&nbsp;Nm</h2>
 	<h2>\(\sigma\)&nbsp;=&nbsp;<span id="sigma">0</span>&nbsp;MPa</h2>
 	<hr>
 	<p>楕円積分を行う関数が正しいかの確認</p>
@@ -60,9 +66,10 @@
 	<p>
 		二分法で近似値を算出する．そのために以下の関数を設定した．<br>
 		<ul>
-			<li>calcQ:&nbsp;\(q\)&nbsp;を決定する関数</li>
-			<li>calcPhi_1:&nbsp;\(\phi_{1}\)&nbsp;を決定する関数</li>
 			<li>calcSmallP:&nbsp;\(p\)&nbsp;を決定する関数</li>
+			<li>calcPhi_1:&nbsp;\(\phi_{1}\)&nbsp;を決定する関数</li>
+			<li>calcQ:&nbsp;\(q\)&nbsp;を決定する関数</li>
+			<li>calcSmallD:&nbsp;\(\delta\)&nbsp;を決定する関数</li>
 			<li>K_k__F_phi_k:&nbsp;第一種完全／不完全楕円積分を区分求積法によって求める関数</li>
 			<li>E_k__E_phi_k:&nbsp;第二種完全／不完全楕円積分を区分求積法によって求める関数</li>
 		</ul>
@@ -94,7 +101,7 @@
 		document.getElementById("l").textContent = L - D;
 		const M_0 = result.P * (L - D);
 		document.getElementById("M_0").textContent = M_0;
-		document.getElementById("sigma").textContent = M_0 * d / 2 / I * 1e-6;
+		document.getElementById("sigma").textContent = M_0 / I * d / 2 * 1e-6;
 	}
 	
 	function findPsi_0 (E, I, L, delta) {
