@@ -17,6 +17,7 @@
 		.sub {
 			border: solid gray 1px;
 			border-radius: 3px;
+			margin: 10px;
 			padding: 0 20px;
 		}
 		hr {
@@ -28,23 +29,42 @@
 	<script type="text/javascript" id="MathJax-script" async
 		src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
 	</script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.5.0/math.min.js"></script>
 </head>
 <body>
 	<h1>有限変形理論</h1>
 	<label>ヤング率&nbsp;E:<input type="number" id="E" value="70"></input>GPa</label>
-	<label>直径&nbsp;d:<input type="number" id="d" value="0.01"></input>m</label>
+	<label>直径&nbsp;d:<input type="number" id="diameter" value="0.01"></input>m</label>
 	<label>長さ&nbsp;L:<input type="number" id="L" value="1"></input>m</label>
-	<label>変形量&nbsp;\(\delta\):<input type="number" id = "delta" value="0.5"></input>m</label>
+	<label>変形量&nbsp;\(\delta\):<input type="number" id = "inputSmallDelta" value="0.5"></input>m</label>
 	<input type="button" onclick="startCalc()" value="startCalc"></input>
 	<h2>\(\psi_{0}\)&nbsp;=&nbsp;<span id="psi_0">0</span></h2>
 	<div class="sub">
 		<h2>\(p\)&nbsp;=&nbsp;<span id="p">0</span></h2>
+		<div class="sub">
+			$$\phi_{1} = \arcsin(\frac{1}{(\sqrt{2})p})$$
+			$$q = K(p) - F(p,\phi_{1})$$
+		</div>
 		<h2>\(q\)&nbsp;=&nbsp;<span id="q">0</span></h2>
 	</div>
+	<div class="sub">
+		$$q^2 = \frac{PL^2}{EI}$$
+		$$P = \frac{EI}{L^2}q^2$$
+	</div>
 	<h2>\(P\)&nbsp;=&nbsp;<span id="P">0</span>&nbsp;N</h2>
+	<div class="sub">
+		$$P = mg = 9.80665m$$
+	</div>
 	<h2>\(m\)&nbsp;=&nbsp;<span id="m">0</span>&nbsp;kg</h2>
-	<h2>\(\delta\)&nbsp;=&nbsp;<span id="output_d">0</span>&nbsp;m</h2>
-	<h2>\(\Delta\)&nbsp;=&nbsp;<span id="D">0</span>&nbsp;m</h2>
+	<div class="sub">
+		\begin{eqnarray}
+			\delta
+				&=& \sqrt{\frac{EI}{P}}[K(p) - F(p,\phi_{1}) - 2E(p) + 2E(p,\phi_{1})] \\
+				&=& \sqrt{\frac{EI}{P}}[q - 2\{E(p) - E(p,\phi_{1})\}]
+		\end{eqnarray}
+	</div>
+	<h2>\(\delta\)&nbsp;=&nbsp;<span id="outputSmallDelta">0</span>&nbsp;m</h2>
+	<h2>\(\Delta\)&nbsp;=&nbsp;<span id="largeDelta">0</span>&nbsp;m</h2>
 	<h2>\(L - \Delta\)&nbsp;=&nbsp;<span id="l">0</span>&nbsp;m</h2>
 	<h2>\(P(L - \Delta)\)&nbsp;=&nbsp;\(M_{0}\)&nbsp;=&nbsp;<span id="M_0">0</span>&nbsp;Nm</h2>
 	<h2>\(\sigma\)&nbsp;=&nbsp;<span id="sigma">0</span>&nbsp;MPa</h2>
@@ -76,42 +96,38 @@
 		関数&nbsp;findPsi_0&nbsp;内でこれらを呼び出して実行し，
 		誤差が1e-6未満になったところで計算を終了し，結果を出力する．
 	</p>
-	
-	$$q^2 = \frac{PL^2}{EI}$$
-	$$P = \frac{EI}{L^2}q^2$$
-	
 </body>
 <script>
 	function startCalc () {
 		const E = document.getElementById("E").value * 1e9;
-		const d = document.getElementById("d").value;
-		const I = Math.PI * d * d * d * d / 64;
+		const diameter = document.getElementById("diameter").value;
+		const I = Math.PI * (diameter**4) / 64;
 		const L = document.getElementById("L").value;
-		const delta = document.getElementById("delta").value;
-		console.log(`E=${E},d=${d},I=${I},L=${L},delta=${delta}`);
+		const delta = document.getElementById("inputSmallDelta").value;
+		console.log(`E=${E},d=${diameter},I=${I},L=${L},delta=${delta}`);
 		const result = findPsi_0 (E, I, L, delta);
 		document.getElementById("psi_0").textContent = (`${result.psi_0} rad = ${result.psi_0 * 180 / Math.PI} deg`);
 		document.getElementById("p").textContent = result.p;
 		document.getElementById("q").textContent = result.q;
 		document.getElementById("P").textContent = result.P;
 		document.getElementById("m").textContent = result.P / 9.80665;
-		document.getElementById("output_d").textContent = result.d;
+		document.getElementById("outputSmallDelta").textContent = result.d;
 		const D = L - Math.sqrt(2 * E * I * (2 * result.p * result.p - 1) / result.P);
-		document.getElementById("D").textContent = D;
+		document.getElementById("largeDelta").textContent = D;
 		document.getElementById("l").textContent = L - D;
 		const M_0 = result.P * (L - D);
 		document.getElementById("M_0").textContent = M_0;
-		document.getElementById("sigma").textContent = M_0 / I * d / 2 * 1e-6;
+		document.getElementById("sigma").textContent = M_0 / I * diameter / 2 * 1e-6;
 	}
 	
-	function findPsi_0 (E, I, L, delta) {
-		const psi_0_min = 0;
-		const psi_0_max = Math.PI/2;
+	function findPsi_0 (E, I, L, inputSmallDelta) {
+		const psi_0_min = 1e-6;
+		const psi_0_max = Math.PI/2 - 1e-6;
 		const tolerance = 1e-6;
 		
 		let low = psi_0_min;
 		let high = psi_0_max;
-		let d = 0;
+		let calcSmallDelta = 0;
 		let psi_0_mid = 0;
 		let p = 0;
 		let phi_1 = 0;
@@ -125,18 +141,18 @@
 			phi_1 = calcPhi_1(p);
 			q = calcQ(p, phi_1);
 			P = E * I * q * q / L / L;
-			d = calcSmallD(E, I, P, p, phi_1, q);
+			calcSmallDelta = calcSmallD(E, I, P, p, phi_1, q);
 			console.log(`psi_0_mid: ${psi_0_mid}`);
 			console.log(`p: ${p}`);
 			console.log(`phi_1: ${phi_1}`);
 			console.log(`q: ${q}`);
 			console.log(`P: ${P}`);
-			console.log(`d: ${d}`);
-			if (Math.abs(d - delta) < tolerance) {
+			console.log(`d: ${calcSmallDelta}`);
+			if (Math.abs(calcSmallDelta - inputSmallDelta) < tolerance) {
 				console.log("====OK====");
 				break;
 			}
-			if (d < delta) {
+			if (calcSmallDelta < inputSmallDelta) {
 				low = psi_0_mid;
 				console.log("check: low");
 			}
@@ -151,7 +167,7 @@
 			p: p,
 			q: q,
 			P: P,
-			d: d
+			d: calcSmallDelta
 		};
 	}
 	
@@ -171,44 +187,77 @@
 		return Math.sqrt(E * I / P) * (q - 2 * (E_k__E_phi_k(Math.PI/2, p) - E_k__E_phi_k(phi_1, p)));
 	}
 	
-	function K_k__F_phi_k (phi, p, steps = 10000) {
+	function K_k__F_phi_k (phi, p, steps = 10000) { // シンプソン則
+    if (steps % 2 !== 0) steps++; // 偶数ステップに調整
+    const a = 0;
+    const b = phi;
+    const h = (b - a) / steps;
+    let sum = 0;
+
+    for (let i = 0; i <= steps; i++) {
+        const x = a + i * h;
+        const f = 1 / Math.sqrt(1 - p * p * Math.sin(x) ** 2);
+        sum += (i === 0 || i === steps) ? f : (i % 2 === 0 ? 2 * f : 4 * f);
+    }
+
+    return (h / 3) * sum;
+    
+    /*
 		const a = 0;
 		const b = phi;
-		const h = (b - a) / steps;
+		const h = math.divide(math.subtract(b, a), steps);
 		let f = 0;
 		let sum = 0;
 		
 		for (let i = 0; i < steps; i++) {
-			const x = a + i * h;
-			f = 1 / Math.sqrt(1 - p * p * Math.sin(x) ** 2);
+			const x = math.add(a, math.multiply(i, h));
+			f = math.divide(1, math.sqrt(math.subtract(1, math.multiply(math.pow(p, 2), math.pow(math.sin(x), 2)))));
 			if (i === 0 || i === steps) {
-				sum += f/2;
+				sum = math.add(sum, f/2);
 			}
 			else {
-				sum += f;
+				sum = math.add(sum, f);
 			}
 		}
-		return h * sum;
+		
+		return math.multiply(h, sum);
+		*/
 	}
 	
-	function E_k__E_phi_k (phi, p, steps = 10000) {
+	function E_k__E_phi_k (phi, p, steps = 10000) { // シンプソン則
+    if (steps % 2 !== 0) steps++; // 偶数ステップに調整
+    const a = 0;
+    const b = phi;
+    const h = (b - a) / steps;
+    let sum = 0;
+
+    for (let i = 0; i <= steps; i++) {
+        const x = a + i * h;
+        const f = Math.sqrt(1 - p * p * Math.sin(x) ** 2);
+        sum += (i === 0 || i === steps) ? f : (i % 2 === 0 ? 2 * f : 4 * f);
+    }
+
+    return (h / 3) * sum;
+	
+	/*
 		const a = 0;
 		const b = phi;
-		const h = (b - a) / steps;
+		const h = math.divide(math.subtract(b, a), steps);
 		let f = 0;
 		let sum = 0;
 		
 		for (let i = 0; i < steps; i++) {
-			const x = a + i * h;
-			f = Math.sqrt(1 - p * p * Math.sin(x) ** 2);
+			const x = math.add(a, math.multiply(i, h));
+			f = math.sqrt(math.subtract(1, math.multiply(math.pow(p, 2), math.pow(math.sin(x), 2))));
 			if (i === 0 || i === steps) {
-				sum += f/2;
+				sum = math.add(sum, f/2);
 			}
 			else {
-				sum += f;
+				sum = math.add(sum, f);
 			}
 		}
 		
-		return h * sum;
+		return math.multiply(h, sum);
+	*/
 	}
 </script>
