@@ -80,11 +80,13 @@
 		\end{eqnarray}
 	</div>
 	<h2>\(\delta\)&nbsp;=&nbsp;<span id="outputSmallDelta">0</span>&nbsp;m</h2>
+	<h2>\(\delta/L\)&nbsp;=&nbsp;<span id="verticalDeflections">0</span></h2>
 	<div class="sub">
 		$$\Delta = L - \sqrt{\frac{2EI(2p^2 - 1}{P}}$$
 	</div>
 	<h2>\(\Delta\)&nbsp;=&nbsp;<span id="largeDelta">0</span>&nbsp;m</h2>
 	<h2>\(L - \Delta\)&nbsp;=&nbsp;<span id="l">0</span>&nbsp;m</h2>
+	<h2>\((L - \Delta)/L\)&nbsp;=&nbsp;<span id="horizontalDeflections">0</span></h2>
 	<h2>\(P(L - \Delta)\)&nbsp;=&nbsp;\(M_{0}\)&nbsp;=&nbsp;<span id="M_0">0</span>&nbsp;Nm</h2>
 	<div class="sub">
 		$$\sigma = \frac{M_{0}}{I}y = M_{0}\frac{64}{\pi d^4}\frac{d}{2}$$
@@ -144,9 +146,11 @@
 		document.getElementById("P").textContent = result.P;
 		document.getElementById("m").textContent = result.P / 9.80665;
 		document.getElementById("outputSmallDelta").textContent = result.d;
+		document.getElementById("verticalDeflections").textContent = result.d / L;
 		const D = L - Math.sqrt(2 * E * I * (2 * result.p * result.p - 1) / result.P);
 		document.getElementById("largeDelta").textContent = D;
 		document.getElementById("l").textContent = L - D;
+		document.getElementById("horizontalDeflections").textContent = (L - D) / L;
 		const M_0 = result.P * (L - D);
 		document.getElementById("M_0").textContent = M_0;
 		if (document.getElementById("useEandDiameter").checked) {
