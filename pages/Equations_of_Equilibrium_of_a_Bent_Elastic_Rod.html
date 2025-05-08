@@ -10,9 +10,19 @@
 		}
 		label {
 			display: block;
+			margin: 10px;
+		}
+		input + label {
+			display: inline;
 		}
 		input {
 			margin: 5px;
+		}
+		#useEandDiameter:checked ~ .EI {
+			display: none;
+		}
+		#useEI:checked ~ .EandDiameter {
+			display: none;
 		}
 		.sub {
 			border: solid gray 1px;
@@ -33,11 +43,17 @@
 </head>
 <body>
 	<h1>有限変形理論</h1>
-	<label>ヤング率&nbsp;E:<input type="number" id="E" value="70"></input>GPa</label>
-	<label>直径&nbsp;d:<input type="number" id="diameter" value="0.01"></input>m</label>
-	<label>長さ&nbsp;L:<input type="number" id="L" value="1"></input>m</label>
-	<label>変形量&nbsp;\(\delta\):<input type="number" id = "inputSmallDelta" value="0.5"></input>m</label>
-	<input type="button" onclick="startCalc()" value="startCalc"></input>
+	<form>
+		<input type="radio" name="changeInput" value="useEandDiameter" id="useEandDiameter" checked><label for="useEandDiameter">ヤング率&nbsp;\(E\)&nbsp;と直径&nbsp;\(d\)&nbsp;を使用</label>
+		<br>
+		<input type="radio" name="changeInput" value="useEI" id="useEI"><label for="useEI">曲げ剛性&nbsp;\(EI\)&nbsp;を使用</label>
+		<label class="EandDiameter">ヤング率&nbsp;\(E\)&nbsp;:<input type="number" id="E" value="70"></input>GPa</label>
+		<label class="EandDiameter">直径&nbsp;\(d\)&nbsp;:<input type="number" id="diameter" value="0.01"></input>m</label>
+		<label class="EI">曲げ剛性&nbsp;\(EI\)&nbsp;:<input type="number" id="EI" value="70"></input>Nm<sup>2</sup></label>
+		<label>長さ&nbsp;\(L\)&nbsp;:<input type="number" id="L" value="1"></input>m</label>
+		<label>変形量&nbsp;\(\delta\)&nbsp;:<input type="number" id = "inputSmallDelta" value="0.5"></input>m</label>
+		<input type="button" onclick="startCalc()" value="startCalc">
+	</form>
 	<h2>\(\psi_{0}\)&nbsp;=&nbsp;<span id="psi_0">0</span></h2>
 	<div class="sub">
 		<h2>\(p\)&nbsp;=&nbsp;<span id="p">0</span></h2>
@@ -46,9 +62,9 @@
 			$$q = K(p) - F(p,\phi_{1})$$
 		</div>
 		<h2>\(q\)&nbsp;=&nbsp;<span id="q">0</span></h2>
+		<h2>\(q^2\)&nbsp;=&nbsp;\(\frac{PL^2}{EI}\)&nbsp;=&nbsp;<span id="q^2">0</span></h2>
 	</div>
 	<div class="sub">
-		$$q^2 = \frac{PL^2}{EI}$$
 		$$P = \frac{EI}{L^2}q^2$$
 	</div>
 	<h2>\(P\)&nbsp;=&nbsp;<span id="P">0</span>&nbsp;N</h2>
@@ -64,9 +80,17 @@
 		\end{eqnarray}
 	</div>
 	<h2>\(\delta\)&nbsp;=&nbsp;<span id="outputSmallDelta">0</span>&nbsp;m</h2>
+	<h2>\(\delta/L\)&nbsp;=&nbsp;<span id="verticalDeflections">0</span></h2>
+	<div class="sub">
+		$$\Delta = L - \sqrt{\frac{2EI(2p^2 - 1}{P}}$$
+	</div>
 	<h2>\(\Delta\)&nbsp;=&nbsp;<span id="largeDelta">0</span>&nbsp;m</h2>
 	<h2>\(L - \Delta\)&nbsp;=&nbsp;<span id="l">0</span>&nbsp;m</h2>
+	<h2>\((L - \Delta)/L\)&nbsp;=&nbsp;<span id="horizontalDeflections">0</span></h2>
 	<h2>\(P(L - \Delta)\)&nbsp;=&nbsp;\(M_{0}\)&nbsp;=&nbsp;<span id="M_0">0</span>&nbsp;Nm</h2>
+	<div class="sub">
+		$$\sigma = \frac{M_{0}}{I}y = M_{0}\frac{64}{\pi d^4}\frac{d}{2}$$
+	</div>
 	<h2>\(\sigma\)&nbsp;=&nbsp;<span id="sigma">0</span>&nbsp;MPa</h2>
 	<hr>
 	<p>楕円積分を行う関数が正しいかの確認</p>
@@ -77,7 +101,7 @@
 	<p>
 		第一項は第一種完全楕円積分&nbsp;\(K(p)\)，
 		第二項は第一種不完全楕円積分&nbsp;\(F(p,\phi_{1})\)&nbsp;である．<br>
-		これらは区分求積法で近似値を求めた．
+		これらは&nbsp;<s>区分求積法</s>&nbsp;シンプソン則で近似値を求めた．
 		<a href="https://keisan.casio.jp/menu/system/000000001250">計算サイト</a>
 		の結果と見比べ，分割数は10000とした．<br>
 		ここで，\(\phi_{1} = \arcsin(\frac{1}{(\sqrt{2})p})\)&nbsp;である．<br>
@@ -99,9 +123,18 @@
 </body>
 <script>
 	function startCalc () {
-		const E = document.getElementById("E").value * 1e9;
-		const diameter = document.getElementById("diameter").value;
-		const I = Math.PI * (diameter**4) / 64;
+		let E = 0;
+		let diameter = 0;
+		let I = 0;
+		if (document.getElementById("useEandDiameter").checked) {
+			E = document.getElementById("E").value * 1e9;
+			diameter = document.getElementById("diameter").value;
+			I = Math.PI * (diameter**4) / 64;
+		}
+		else {
+			E = document.getElementById("EI").value;
+			I = 1;
+		}
 		const L = document.getElementById("L").value;
 		const delta = document.getElementById("inputSmallDelta").value;
 		console.log(`E=${E},d=${diameter},I=${I},L=${L},delta=${delta}`);
@@ -109,15 +142,23 @@
 		document.getElementById("psi_0").textContent = (`${result.psi_0} rad = ${result.psi_0 * 180 / Math.PI} deg`);
 		document.getElementById("p").textContent = result.p;
 		document.getElementById("q").textContent = result.q;
+		document.getElementById("q^2").textContent = result.q * result.q;
 		document.getElementById("P").textContent = result.P;
 		document.getElementById("m").textContent = result.P / 9.80665;
 		document.getElementById("outputSmallDelta").textContent = result.d;
+		document.getElementById("verticalDeflections").textContent = result.d / L;
 		const D = L - Math.sqrt(2 * E * I * (2 * result.p * result.p - 1) / result.P);
 		document.getElementById("largeDelta").textContent = D;
 		document.getElementById("l").textContent = L - D;
+		document.getElementById("horizontalDeflections").textContent = (L - D) / L;
 		const M_0 = result.P * (L - D);
 		document.getElementById("M_0").textContent = M_0;
-		document.getElementById("sigma").textContent = M_0 / I * diameter / 2 * 1e-6;
+		if (document.getElementById("useEandDiameter").checked) {
+			document.getElementById("sigma").textContent = M_0 / I * diameter / 2 * 1e-6;
+		}
+		else {
+			document.getElementById("sigma").textContent = "-";
+		}
 	}
 	
 	function findPsi_0 (E, I, L, inputSmallDelta) {
