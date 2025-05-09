@@ -5,7 +5,7 @@
 			margin: 0 auto;
 			padding: 20px;
 		}
-		h1 h2 {
+		h1, h2 {
 			margin: 10px;
 		}
 		label {
@@ -18,10 +18,29 @@
 		input {
 			margin: 5px;
 		}
+		#startButton {
+			display: block;
+			margin: 20px;
+			width: 200px;
+			height: 50px;
+			font-size: 30px;
+		}
 		#useEandDiameter:checked ~ .EI {
 			display: none;
 		}
 		#useEI:checked ~ .EandDiameter {
+			display: none;
+		}
+		#useEI:checked ~ label[for="sigmaCondition"] {
+			color: red;
+		}
+		#useEI:checked ~ .sigmaCondition {
+			color: red;
+		}
+		#useSmallDeltaCondition:checked ~ .sigmaCondition {
+			display: none;
+		}
+		#useSigmaCondition:checked ~ .smallDeltaCondition {
 			display: none;
 		}
 		.sub {
@@ -47,12 +66,19 @@
 		<input type="radio" name="changeInput" value="useEandDiameter" id="useEandDiameter" checked><label for="useEandDiameter">ヤング率&nbsp;\(E\)&nbsp;と直径&nbsp;\(d\)&nbsp;を使用</label>
 		<br>
 		<input type="radio" name="changeInput" value="useEI" id="useEI"><label for="useEI">曲げ剛性&nbsp;\(EI\)&nbsp;を使用</label>
-		<label class="EandDiameter">ヤング率&nbsp;\(E\)&nbsp;:<input type="number" id="E" value="70"></input>GPa</label>
-		<label class="EandDiameter">直径&nbsp;\(d\)&nbsp;:<input type="number" id="diameter" value="0.01"></input>m</label>
-		<label class="EI">曲げ剛性&nbsp;\(EI\)&nbsp;:<input type="number" id="EI" value="70"></input>Nm<sup>2</sup></label>
+		
+		<label class="EandDiameter">ヤング率&nbsp;\(E\)&nbsp;:<input type="number" id="E" value="70">GPa</label>
+		<label class="EandDiameter">直径&nbsp;\(d\)&nbsp;:<input type="number" id="diameter" value="0.01">m</label>
+		<label class="EI">曲げ剛性&nbsp;\(EI\)&nbsp;:<input type="number" id="EI" value="70">Nm<sup>2</sup></label>
 		<label>長さ&nbsp;\(L\)&nbsp;:<input type="number" id="L" value="1"></input>m</label>
-		<label>変形量&nbsp;\(\delta\)&nbsp;:<input type="number" id = "inputSmallDelta" value="0.5"></input>m</label>
-		<input type="button" onclick="startCalc()" value="startCalc">
+		
+		<input type="radio" name="changeCondition" value="useSmallDeltaContidion" id="useSmallDeltaCondition" checked><label for="useSmallDeltaCondition">垂直変位を使用</label>
+		<br>
+		<input type="radio" name="changeCondition" value="useSigmaContidion" id="useSigmaCondition"><label for="useSigmaCondition">最大曲げ応力を使用</label>
+		
+		<label class="smallDeltaCondition">垂直変位&nbsp;\(\delta\)&nbsp;:<input type="number" id = "inputSmallDelta" value="0.5">m</label>
+		<label class="sigmaCondition">最大曲げ応力&nbsp;\(\sigma\)&nbsp;:<input type="number" id = "inputSigma" value="200">MPa</label>
+		<input type="button" onclick="startCalc()" id="startButton" value="startCalc">
 	</form>
 	<h2>\(\psi_{0}\)&nbsp;=&nbsp;<span id="psi_0">0</span></h2>
 	<div class="sub">
@@ -82,7 +108,7 @@
 	<h2>\(\delta\)&nbsp;=&nbsp;<span id="outputSmallDelta">0</span>&nbsp;m</h2>
 	<h2>\(\delta/L\)&nbsp;=&nbsp;<span id="verticalDeflections">0</span></h2>
 	<div class="sub">
-		$$\Delta = L - \sqrt{\frac{2EI(2p^2 - 1}{P}}$$
+		$$\Delta = L - \sqrt{\frac{2EI(2p^2 - 1)}{P}}$$
 	</div>
 	<h2>\(\Delta\)&nbsp;=&nbsp;<span id="largeDelta">0</span>&nbsp;m</h2>
 	<h2>\(L - \Delta\)&nbsp;=&nbsp;<span id="l">0</span>&nbsp;m</h2>
@@ -122,10 +148,20 @@
 	</p>
 </body>
 <script>
+	addEventListener("change", () => {
+		if (document.getElementById("useEI").checked && document.getElementById("useSigmaCondition").checked) {
+			document.getElementById("startButton").setAttribute("disabled", "");
+		}
+		else {
+			document.getElementById("startButton").removeAttribute("disabled");
+		}
+	});
+	
 	function startCalc () {
 		let E = 0;
 		let diameter = 0;
 		let I = 0;
+		
 		if (document.getElementById("useEandDiameter").checked) {
 			E = document.getElementById("E").value * 1e9;
 			diameter = document.getElementById("diameter").value;
@@ -136,9 +172,22 @@
 			I = 1;
 		}
 		const L = document.getElementById("L").value;
-		const delta = document.getElementById("inputSmallDelta").value;
-		console.log(`E=${E},d=${diameter},I=${I},L=${L},delta=${delta}`);
-		const result = findPsi_0 (E, I, L, delta);
+		
+		let delta = 0;
+		let sigma = 0;
+		let result = 0;
+		
+		if (document.getElementById("useSmallDeltaCondition").checked) {
+			delta = document.getElementById("inputSmallDelta").value;
+			console.log(`E=${E}, d=${diameter}, I=${I}, L=${L}, delta=${delta}`);
+			result = findPsi_0 (E, I, L, delta);
+		}
+		else {
+			sigma = document.getElementById("inputSigma").value * 1e6;
+			console.log(`E=${E}, d=${diameter}, I=${I}, L=${L}, sigma=${sigma}`);
+			result = findPsi_0_sigma(E, L, diameter, sigma);
+		}
+		
 		document.getElementById("psi_0").textContent = (`${result.psi_0} rad = ${result.psi_0 * 180 / Math.PI} deg`);
 		document.getElementById("p").textContent = result.p;
 		document.getElementById("q").textContent = result.q;
@@ -154,11 +203,72 @@
 		const M_0 = result.P * (L - D);
 		document.getElementById("M_0").textContent = M_0;
 		if (document.getElementById("useEandDiameter").checked) {
-			document.getElementById("sigma").textContent = M_0 / I * diameter / 2 * 1e-6;
+			if (document.getElementById("useSmallDeltaCondition").checked) {
+				document.getElementById("sigma").textContent = M_0 / I * diameter / 2 * 1e-6;
+			}
+			else {
+				document.getElementById("sigma").textContent = result.sigma * 1e-6;
+			}
 		}
 		else {
 			document.getElementById("sigma").textContent = "-";
 		}
+	}
+	
+	function findPsi_0_sigma (E, L, diameter, inputSigma) {
+		const I = Math.PI * (diameter**4) / 64;
+		const psi_0_min = 1e-6;
+		const psi_0_max = Math.PI/2 - 1e-6;
+		const tolerance = 1e-6;
+		
+		let low = psi_0_min;
+		let high = psi_0_max;
+		let psi_0_mid = 0;
+		let p = 0;
+		let phi_1 = 0;
+		let q = 0;
+		let P = 0;
+		let calcSmallDelta = 0;
+		let calcSigma = 0;
+		
+		for (let i = 0; i < 1000; i++) {
+			console.log(`====loop: ${i + 1}====`);
+			psi_0_mid = (low + high) / 2;
+			p = calcSmallP(psi_0_mid);
+			phi_1 = calcPhi_1(p);
+			q = calcQ(p, phi_1);
+			P = E * I * q * q / L / L;
+			calcSmallDelta = calcSmallD(E, I, P, p, phi_1, q);
+			calcSigma = Math.sqrt(2 * E * I * P * (2 * p * p - 1)) / I * diameter / 2;
+			console.log(`psi_0_mid: ${psi_0_mid}`);
+			console.log(`p: ${p}`);
+			console.log(`phi_1: ${phi_1}`);
+			console.log(`q: ${q}`);
+			console.log(`P: ${P}`);
+			console.log(`d: ${calcSmallDelta}`);
+			console.log(`sigma: ${calcSigma}`);
+			if (Math.abs(calcSigma - inputSigma) < tolerance) {
+				console.log("====OK====");
+				break;
+			}
+			if (calcSigma < inputSigma) {
+				low = psi_0_mid;
+				console.log("check: low");
+			}
+			else {
+				high = psi_0_mid;
+				console.log("check: high");
+			}
+		}
+		
+		return {
+			psi_0: psi_0_mid,
+			p: p,
+			q: q,
+			P: P,
+			d: calcSmallDelta,
+			sigma: calcSigma
+		};
 	}
 	
 	function findPsi_0 (E, I, L, inputSmallDelta) {
@@ -175,7 +285,7 @@
 		let q = 0;
 		let P = 0;
 		
-		for (let i = 0; i < 10000; i++) {
+		for (let i = 0; i < 1000; i++) {
 			console.log(`====loop: ${i + 1}====`);
 			psi_0_mid = (low + high) / 2;
 			p = calcSmallP(psi_0_mid);
